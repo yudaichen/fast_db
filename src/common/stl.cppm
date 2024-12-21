@@ -125,6 +125,10 @@ export namespace std {
     using std::queue;
     using std::string;
     using std::vector;
+    using std::unordered_set;
+    using std::unordered_map;
+    using std::set;
+    using std::map;
 
     using std::binary_search;
     using std::fabs;
@@ -185,6 +189,7 @@ export namespace std {
 
     using std::cerr;
     using std::cout;
+    using std::end;
     using std::endl;
 
     using std::ifstream;
@@ -209,7 +214,15 @@ export namespace std {
 
     using std::exception;
     using std::unexpected;
-    using std::unordered_set;
+    using std::bad_exception;
+    using std::bad_alloc;
+    using std::bad_cast;
+    using std::bad_typeid;
+    using std::bad_weak_ptr;
+    using std::bad_function_call;
+    using std::bad_optional_access;
+    using std::bad_array_new_length;
+    using std::bad_exception;
     using std::expected;
 
     using std::back_inserter;
@@ -244,4 +257,10 @@ export namespace std {
     }
     using std::atomic_flag;
 
+    using std::shared_ptr;
+    using std::unique_ptr;
+    using std::make_shared;
+    using std::make_unique;
+    using std::weak_ptr;
+    using std::enable_shared_from_this;
 }    // namespace std
