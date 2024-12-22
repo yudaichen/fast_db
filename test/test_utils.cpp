@@ -2,6 +2,7 @@ import stl;
 import sys_utils;
 import queue_utils;
 import collect_utils;
+import robin_hood;
 
 #include <gtest/gtest.h>
 #include "utils/log.h"
@@ -194,4 +195,11 @@ TEST(range_group, student)
     processVariantConstexpr(v1); // 输出: Processing int: 20
     processVariantConstexpr(v2); // 输出: Processing double: 3.5
     processVariantConstexpr(v3); // 输出: Processing string: Hello World!
+}
+
+TEST(test_modules,hobin_hood)
+{
+    robin_hood::unordered_flat_map<int, int> map;
+    map[1] = 123;
+    std::cout << "hello, world! " << map.size() << std::endl;
 }

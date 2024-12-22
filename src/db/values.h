@@ -3,6 +3,7 @@
 
 import stl;
 #include <iostream>
+#include <utility>
 #include "redis/redis_asio.hpp"
 
 // 基本类型的定义
@@ -173,8 +174,8 @@ class StringValue : public Value
 public:
     std::string value;
 
-    StringValue(const std::string &val)
-        : value(val)
+    StringValue(std::string val)
+        : value(std::move(val))
     {
     }
 
