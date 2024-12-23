@@ -39,6 +39,8 @@ module;
 #include <expected>
 #include <algorithm>
 
+#include "utils/macro_definition.hpp"
+
 export module stl;
 
 export namespace std {
@@ -47,10 +49,21 @@ export namespace std {
     // using std::stringstream;
     using std::size_t;
 
-    using std::forward;
-    using std::move;
-
+    // [utility.swap], swap
     using std::swap;
+
+    // [utility.exchange], exchange
+    using std::exchange;
+
+    // [forward], forward/move
+    using std::forward;
+#ifdef  IS_CPP23_OR_LATER
+using std::forward_like;
+#endif
+    using std::move;
+    using std::move_if_noexcept;
+
+
 
     using std::max;
     using std::min;
@@ -92,6 +105,7 @@ export namespace std {
     using std::strstr;
     using std::strtok;
     using std::strxfrm;
+
 
     using std::format;
     using std::print;
@@ -213,7 +227,6 @@ export namespace std {
     using std::uniform_real_distribution;
 
     using std::exception;
-    using std::unexpected;
     using std::bad_exception;
     using std::bad_alloc;
     using std::bad_cast;
@@ -223,7 +236,7 @@ export namespace std {
     using std::bad_optional_access;
     using std::bad_array_new_length;
     using std::bad_exception;
-    using std::expected;
+
 
     using std::back_inserter;
     using std::hash;
@@ -233,9 +246,10 @@ export namespace std {
 
     using std::get;
     using std::holds_alternative;
+    using std::visit;
     using std::variant;
     using std::variant_size_v;
-    using std::visit;
+
 
     using std::common_type_t;
     using std::is_floating_point_v;
@@ -263,4 +277,44 @@ export namespace std {
     using std::make_unique;
     using std::weak_ptr;
     using std::enable_shared_from_this;
+
+    // [coroutine.traits], coroutine traits
+    using std::coroutine_traits;
+
+    // [coroutine.handle], coroutine handle
+    using std::coroutine_handle;
+
+    // [coroutine.handle.compare], comparison operators
+    using std::operator==;
+    using std::operator<=>;
+
+    // [coroutine.handle.hash], hash support
+    using std::hash;
+
+    // [coroutine.noop], no-op coroutines
+    using std::noop_coroutine;
+    using std::noop_coroutine_handle;
+    using std::noop_coroutine_promise;
+
+    // [coroutine.trivial.awaitables], trivial awaitables
+    using std::suspend_always;
+    using std::suspend_never;
+
+
+
+    #ifdef IS_CPP23_OR_LATER
+    // [expected.unexpected], class template unexpected
+    using std::unexpected;
+
+    // [expected.bad], class template bad_expected_access
+    using std::bad_expected_access;
+
+    // in-place construction of unexpected values
+    using std::unexpect;
+    using std::unexpect_t;
+
+    // [expected.expected], class template expected
+    using std::expected;
+    #endif // _LIBCPP_STD_VER >= 23
+
 }    // namespace std
