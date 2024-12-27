@@ -23,6 +23,7 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DNDEBUG")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g -DNDEBUG")
 
+
 # 使用test文件
 set(USE_TEST ON)
 set(UES_PRECOMPILE ON)
@@ -40,30 +41,17 @@ function(fn_modules)
 
         execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version OUTPUT_VARIABLE clang_full_version_string)
         string(REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
-        if (CLANG_VERSION_STRING VERSION_GREATER 16)
-            # Print CMake version and project name
-            message(STATUS "Building ${PROJECT_NAME} with CMake version: ${CMAKE_VERSION} On CLANG-${CLANG_VERSION_STRING}")
-        else ()
-            message(FATAL_ERROR, "Please use clang version 17.0 and above")
-        endif ()
+        message(STATUS "Using Clang with Clang-${CLANG_VERSION_STRING} as the build.")
+        if (CLANG_VERSION_STRING VERSION_GREATER_EQUAL 17)
+            set(CMAKE_CXX_FLAGS -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wextra -Wno-unused-parameter -Wno-unused-private-field -pthread -fcolor-diagnostics)
+            # 使用 Clang 时，设置使用 lld 链接器
+            set(CMAKE_CXX_LINKER "lld-19")
+            set(CMAKE_C_LINKER "lld-19")
+        else()
+            message(FATAL_ERROR "Please use clang version 17.0 and above")
+        endif()
+        set(CMAKE_EXE_LINKER_FLAGS PRIVATE -static-libstdc++ -static-libgcc -z noexecstack)
 
-        if (CLANG_VERSION_STRING VERSION_EQUAL 17)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wno-read-modules-implicitly -Wextra -Wno-unused-parameter -Wno-unused-private-field -pthread -fcolor-diagnostics")
-        elseif (CMAKE_CXX_FLAGS VERSION_GREATER_EQUAL 18)
-            add_definitions(-mevex512)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wextra -Wno-unused-parameter -Wno-unused-private-field -pthread -fcolor-diagnostics")
-        elseif (CLANG_VERSION_STRING VERSION_EQUAL 19)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wno-read-modules-implicitly -Wextra -Wno-unused-parameter -Wno-unused-private-field -pthread -fcolor-diagnostics")
-        else ()
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wextra -Wno-unused-parameter -Wno-unused-private-field -pthread -fcolor-diagnostics")
-        endif ()
-
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc -z noexecstack")
-
-        # 使用 Clang 时，设置使用 lld 链接器
-        set(CMAKE_CXX_LINKER "lld-19")
-        set(CMAKE_C_LINKER "lld-19")
-        message(STATUS "Using Clang with lld-19 as the linker.")
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # 使用 GNU 时，设置使用 Gold 链接器
         set(CMAKE_CXX_LINKER "ld.gold")
@@ -81,14 +69,14 @@ function(fn_optimize)
         message(STATUS "Setting Release build optimizations")
         if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             #启用链接时优化（LTO）
-            target_compile_options(MyExecutable PRIVATE -O3 -flto)
-            target_link_options(MyExecutable PRIVATE -flto)
+            target_compile_options(${APP_NAME} PRIVATE -O3 -flto)
+            target_link_options(${APP_NAME} PRIVATE -flto)
 
             # 对GCC和Clang，启用分割调试信息
             set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -Wl,--gdb-index")
         elseif (MSVC)
             # 启用优化02  启用链接时代码生成LTCG
-            target_compile_options(MyExecutable PRIVATE /O2 /LTCG)
+            target_compile_options(${APP_NAME} PRIVATE /O2 /LTCG)
         endif ()
     elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
         message(STATUS "Debug build, no optimizations")
@@ -114,9 +102,8 @@ function(fn_find_package)
     find_package(yaml-cpp CONFIG REQUIRED)
     find_package(glog REQUIRED)
 
+    #ubuntu 库文件目录
     include_directories(/usr/include)
-    # conan 第三方包头文件目录
-    include_directories(${CMAKE_INCLUDE_PATH})
     # 本项目 内置头文件目录
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 endfunction()
@@ -148,7 +135,7 @@ function(fn_build)
                 ${CMAKE_CURRENT_SOURCE_DIR}/test/raft_test.cpp
         )
 
-        file(GLOB_RECURSE RAFT_TEST
+        file(GLOB_RECURSE TEST_RAFT
                 ${CMAKE_CURRENT_SOURCE_DIR}/test/raft/*.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/test/raft/*.cc
 
@@ -163,9 +150,9 @@ function(fn_build)
     add_executable(${APP_NAME}
             ${CURRENT_HEADERS}
             ${SOURCE_FILES}
-            ${TEST_FILE}
             ${RUN_FILE}
-            ${RAFT_TEST}
+            ${TEST_FILE}
+            ${TEST_RAFT}
     )
 
     # 预编译头文件
@@ -191,6 +178,7 @@ function(fn_build)
                 FILE_SET core_cxx_modules TYPE CXX_MODULES FILES
                 ${MODULES_FILES}
         )
+
     endif ()
 
     # 添加库文件搜索路径

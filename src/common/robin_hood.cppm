@@ -1,6 +1,4 @@
-
-export module robin_hood;
-
+module;
 
 // see https://semver.org/
 #define ROBIN_HOOD_VERSION_MAJOR 3  // for incompatible API changes
@@ -193,6 +191,8 @@ static Counts& counts() {
 #else
 #    define ROBIN_HOOD_PRIVATE_DEFINITION_NODISCARD()
 #endif
+
+export module robin_hood;
 
 export namespace robin_hood {
 
