@@ -101,20 +101,34 @@ function(fn_find_package)
     find_package(nlohmann_json REQUIRED)
     find_package(yaml-cpp CONFIG REQUIRED)
     find_package(glog REQUIRED)
-
-    #ubuntu 库文件目录
-    include_directories(/usr/include)
-    # 本项目 内置头文件目录
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 endfunction()
 
 function(fn_build)
+    #ubuntu 库文件目录
+    include_directories(/usr/include)
+
+    #项目内头文件
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    # 本项目 内置头文件目录
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest)
+
+
     # 头文件
     file(GLOB_RECURSE CURRENT_HEADERS
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp)
+
+            # cppcoro
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include/*.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include/*.hpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/lib/*.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/lib/*.hpp
+
+            # doctest
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.hpp)
 
     # 源文件
     file(GLOB_RECURSE SOURCE_FILES
@@ -123,16 +137,28 @@ function(fn_build)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.ui
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.qrc
+
+            # cppcoro
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include/*.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include/*.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/lib/*.cc
+
+            # doctest
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.cc
     )
 
     # 使用test文件
     if (USE_TEST)
         #测试文件
         set(TEST_FILE
-                ${CMAKE_CURRENT_SOURCE_DIR}/run/test_main.cpp
+               #[[
                 ${CMAKE_CURRENT_SOURCE_DIR}/test/std_coroutine.cpp
+                ${CMAKE_CURRENT_SOURCE_DIR}/test/raft_test.cpp]]
+                ${CMAKE_CURRENT_SOURCE_DIR}/run/test_main.cpp
                 ${CMAKE_CURRENT_SOURCE_DIR}/test/test_utils.cpp
-                ${CMAKE_CURRENT_SOURCE_DIR}/test/raft_test.cpp
+
         )
 
         file(GLOB_RECURSE TEST_RAFT
@@ -140,8 +166,13 @@ function(fn_build)
                 ${CMAKE_CURRENT_SOURCE_DIR}/test/raft/*.cc
 
         )
+
+       #[[
         # gtest
         add_test(test_all ${APP_NAME})
+        ]]
+
+
     else ()
         #可执行文件
         set(RUN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/run/main.cpp)
@@ -189,7 +220,7 @@ function(fn_build)
             pthread
             ${Boost_LIBRARIES}
             glog
-            gtest
+            #[[gtest]]
             gflags
             nlohmann_json
             libyaml-cpp.so

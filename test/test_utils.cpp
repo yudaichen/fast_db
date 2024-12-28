@@ -10,6 +10,8 @@ import robin_hood;
 //#include <utility>
 #include <iostream>
 #include <format>
+
+#include "doctest.h"
 //#include <execution>
 //#include "redis/redis_asio.hpp"
 using namespace fast::util;
@@ -23,7 +25,7 @@ std::expected<int, std::string> safe_divide(int a, int b)
 }
 
 
-TEST(LockFreeMap_test, test_utils)
+TEST_CASE("LockFreeMap_test, test_utils")
 {
     SafeQueue<std::string> safe_queue;
 
@@ -120,7 +122,7 @@ void processVariantConstexpr(const VarType &var)
 }
 
 
-TEST(range_group, student)
+TEST_CASE("range_group, student")
 {
 
     struct Student
@@ -201,7 +203,7 @@ TEST(range_group, student)
     processVariantConstexpr(v3); // 输出: Processing string: Hello World!
 }
 
-TEST(test_modules, hobin_hood)
+TEST_CASE("test_modules, hobin_hood")
 {
     robin_hood::unordered_flat_map<int, int> map;
     map[1] = 123;
@@ -282,7 +284,7 @@ std::string PrintDrawableToString(pro::proxy<Drawable> p)
 }
 
 
-TEST(test_proxy, proxy_drawable)
+TEST_CASE("test_proxy, proxy_drawable")
 {
 
     pro::proxy<Drawable> p   = pro::make_proxy<Drawable, Rectangle>(3, 5);
@@ -293,5 +295,8 @@ TEST(test_proxy, proxy_drawable)
 
     std::string          str_block = PrintDrawableToString(block);
     std::cout << str_block << "\n"; // Prints: "entity = {Rectangle: width = 3, height = 5}, area = 15"
+
+    std::string          str_block3 = PrintDrawableToString(block);
+    std::cout << str_block3 << "\n"; // Prints: "entity = {Rectangle: width = 3, height = 5}, area = 15"
 
 }
