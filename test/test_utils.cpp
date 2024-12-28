@@ -77,14 +77,16 @@ TEST(LockFreeMap_test, test_utils)
     std::cout << "Map size after clear: " << lfmap.size() << std::endl;*/
 }
 
-void printSpan(std::span<int> s) {
+void printSpan(std::span<int> s)
+{
     for (int n : s) {
         std::cout << n << " ";
     }
 }
 
 
-std::optional<int> findValue(bool found) {
+std::optional<int> findValue(bool found)
+{
     if (found) {
         return 42; // 返回一个值
     }
@@ -92,24 +94,29 @@ std::optional<int> findValue(bool found) {
 }
 
 using VarType = std::variant<int, double, std::string>;
-void processVariant(const VarType& var) {
-    std::visit([](auto&& arg) {
-        std::cout << "Value: " << arg << "\n";
-    }, var);
+
+void processVariant(const VarType &var)
+{
+    std::visit([](auto &&arg) {
+            std::cout << "Value: " << arg << "\n";
+        },
+        var);
 }
 
 
-void processVariantConstexpr(const VarType& var) {
-    std::visit([](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>; // 获取 arg 的类型
-        if constexpr (std::is_same_v<T, int>) {
-            std::cout << "Processing int: " << arg * 2 << "\n"; // 对 int 进行处理
-        } else if constexpr (std::is_same_v<T, double>) {
-            std::cout << "Processing double: " << arg + 1.0 << "\n"; // 对 double 进行处理
-        } else if constexpr (std::is_same_v<T, std::string>) {
-            std::cout << "Processing string: " << arg << " World!\n"; // 对 string 进行处理
-        }
-    }, var);
+void processVariantConstexpr(const VarType &var)
+{
+    std::visit([](auto &&arg) {
+            using T = std::decay_t<decltype(arg)>; // 获取 arg 的类型
+            if constexpr (std::is_same_v<T, int>) {
+                std::cout << "Processing int: " << arg * 2 << "\n"; // 对 int 进行处理
+            } else if constexpr (std::is_same_v<T, double>) {
+                std::cout << "Processing double: " << arg + 1.0 << "\n"; // 对 double 进行处理
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                std::cout << "Processing string: " << arg << " World!\n"; // 对 string 进行处理
+            }
+        },
+        var);
 }
 
 
@@ -139,7 +146,7 @@ TEST(range_group, student)
     };
 
     std::vector<int> numbers = {1, 2, 3, 4, 5, 6};
-    auto taken = numbers | std::views::take_while([](int n) { return n < 4; });
+    auto             taken   = numbers | std::views::take_while([](int n) { return n < 4; });
 
     for (int n : taken) {
         std::cout << n << " "; // 输出: 1 2 3
@@ -152,22 +159,21 @@ TEST(range_group, student)
         std::cout << n << " "; // 输出: 1 4 9 16 25
     }
 
-    int value = 42;
+    int         value     = 42;
     std::string formatted = std::format("The answer is: {}", value);
     std::cout << formatted << std::endl; // 输出: The answer is: 42
 
     using namespace std::chrono;
-    auto today = system_clock::now();
+    auto today    = system_clock::now();
     auto tomorrow = today + days(1);
 
     // 使用 std::print
-    std::string basic_string = std::format("Tomorrow's timestamp: {},", tomorrow.time_since_epoch().count());// 输出: Name: Alice, Age: 30
+    std::string basic_string = std::format("Tomorrow's timestamp: {},", tomorrow.time_since_epoch().count());
+    // 输出: Name: Alice, Age: 30
     std::cout << std::format("Tomorrow's timestamp: {},", tomorrow.time_since_epoch().count()) << std::endl;
 
     int arr[] = {1, 2, 3, 4, 5};
     printSpan(arr); // 输出: 1 2 3 4 5
-
-
 
     std::optional<int> values = findValue(true);
     if (values) {
@@ -175,9 +181,6 @@ TEST(range_group, student)
     } else {
         std::cout << "Value not found\n";
     }
-
-
-
 
     VarType v1 = 10;
     VarType v2 = 3.14;
@@ -188,19 +191,107 @@ TEST(range_group, student)
     processVariant(v3);
 
     // 使用 std::visit 处理不同类型
-    std::visit([](auto&& arg) {
-        std::cout << "Variant value: " << arg << "\n";
-    }, v3);
-
+    std::visit([](auto &&arg) {
+            std::cout << "Variant value: " << arg << "\n";
+        },
+        v3);
 
     processVariantConstexpr(v1); // 输出: Processing int: 20
     processVariantConstexpr(v2); // 输出: Processing double: 3.5
     processVariantConstexpr(v3); // 输出: Processing string: Hello World!
 }
 
-TEST(test_modules,hobin_hood)
+TEST(test_modules, hobin_hood)
 {
     robin_hood::unordered_flat_map<int, int> map;
     map[1] = 123;
     std::cout << "hello, world! " << map.size() << std::endl;
+}
+
+#include <iostream>
+#include <sstream>
+
+#include "utils/proxy.h"
+
+PRO_DEF_MEM_DISPATCH(MemDraw, Draw);
+
+PRO_DEF_MEM_DISPATCH(MemArea, Area);
+
+struct Drawable
+    : pro::facade_builder
+    ::add_convention<MemDraw, void(std::ostream &output)>
+    ::add_convention<MemArea, double() noexcept>
+    ::support_copy<pro::constraint_level::nontrivial>
+    ::build
+{
+};
+
+class Rectangle
+{
+public:
+    Rectangle(double width, double height)
+        : width_(width),
+          height_(height)
+    {
+    }
+
+    Rectangle(const Rectangle &) = default;
+
+    void Draw(std::ostream &out) const
+    {
+        out << "{Rectangle: width = " << width_ << ", height = " << height_ << "}";
+    }
+
+     [[nodiscard]] double Area() const noexcept { return width_ * height_; }
+
+private:
+    double width_;
+    double height_;
+};
+
+class BlockDrawable
+{
+public:
+    BlockDrawable(double width, double height)
+        : width_(width),
+          height_(height)
+    {
+    }
+
+    BlockDrawable(const BlockDrawable &) = default;
+
+    void Draw(std::ostream &out) const
+    {
+        out << "{BlockDrawable: width = " << width_ << ", height = " << height_ << "}";
+    }
+
+    [[nodiscard]] double Area() const noexcept { return width_ * height_; }
+
+private:
+    double width_;
+    double height_;
+};
+
+std::string PrintDrawableToString(pro::proxy<Drawable> p)
+{
+    std::stringstream result;
+    result << "entity = ";
+    p->Draw(result);
+    result << ", area = " << p->Area();
+    return std::move(result).str();
+}
+
+
+TEST(test_proxy, proxy_drawable)
+{
+
+    pro::proxy<Drawable> p   = pro::make_proxy<Drawable, Rectangle>(3, 5);
+    pro::proxy<Drawable> block   = pro::make_proxy<Drawable, BlockDrawable>(3, 5);
+    std::string          str = PrintDrawableToString(p);
+    std::cout << str << "\n"; // Prints: "entity = {Rectangle: width = 3, height = 5}, area = 15"
+
+
+    std::string          str_block = PrintDrawableToString(block);
+    std::cout << str_block << "\n"; // Prints: "entity = {Rectangle: width = 3, height = 5}, area = 15"
+
 }
