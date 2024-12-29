@@ -3,7 +3,9 @@ import sys_utils;
 import queue_utils;
 import collect_utils;
 import robin_hood;
+import BS.thread_pool;
 
+//#include <stacktrace>
 #include <gtest/gtest.h>
 #include "utils/log.h"
 #include <ranges>
@@ -198,6 +200,24 @@ TEST_CASE("range_group, student")
         },
         v3);
 
+    //    LOG_INFO_R << boost::stacktrace::stacktrace();
+    //LOG_STACK2_R;
+
+    try {
+
+        throw std::runtime_error("Something went wrong");
+    } catch (...) {
+        // 使用Boost Stacktrace捕获当前栈信息
+        std::stringstream ss;
+        ss << boost::stacktrace::stacktrace();
+
+        // 将栈信息输出到控制台
+        std::cout << "Caught exception, stack trace:" << ss.str() << std::endl;
+
+    }
+
+    //LOG_STACK_R;
+
     processVariantConstexpr(v1); // 输出: Processing int: 20
     processVariantConstexpr(v2); // 输出: Processing double: 3.5
     processVariantConstexpr(v3); // 输出: Processing string: Hello World!
@@ -244,7 +264,7 @@ public:
         out << "{Rectangle: width = " << width_ << ", height = " << height_ << "}";
     }
 
-     [[nodiscard]] double Area() const noexcept { return width_ * height_; }
+    [[nodiscard]] double Area() const noexcept { return width_ * height_; }
 
 private:
     double width_;
@@ -287,16 +307,160 @@ std::string PrintDrawableToString(pro::proxy<Drawable> p)
 TEST_CASE("test_proxy, proxy_drawable")
 {
 
-    pro::proxy<Drawable> p   = pro::make_proxy<Drawable, Rectangle>(3, 5);
-    pro::proxy<Drawable> block   = pro::make_proxy<Drawable, BlockDrawable>(3, 5);
-    std::string          str = PrintDrawableToString(p);
+    pro::proxy<Drawable> p     = pro::make_proxy<Drawable, Rectangle>(3, 5);
+    pro::proxy<Drawable> block = pro::make_proxy<Drawable, BlockDrawable>(3, 5);
+    std::string          str   = PrintDrawableToString(p);
     std::cout << str << "\n"; // Prints: "entity = {Rectangle: width = 3, height = 5}, area = 15"
 
-
-    std::string          str_block = PrintDrawableToString(block);
+    std::string str_block = PrintDrawableToString(block);
     std::cout << str_block << "\n"; // Prints: "entity = {Rectangle: width = 3, height = 5}, area = 15"
 
-    std::string          str_block3 = PrintDrawableToString(block);
+    std::string str_block3 = PrintDrawableToString(block);
     std::cout << str_block3 << "\n"; // Prints: "entity = {Rectangle: width = 3, height = 5}, area = 15"
 
+}
+
+TEST_CASE("BS.thread_pool")
+{
+    BS::thread_pool   pool(1);
+    std::future<void> submit_task = pool.submit_task([]() {
+            std::cout << "BS::thread_pool pool" << "\n";
+        LOG_STACK2_R;
+            /*for (const auto &frame : st) {
+                std::cout << frame.description() << " at " << frame.source_file() << ":" << frame.source_line() <<
+                    std::endl;
+            }*/
+
+            /*try {
+                throw std::runtime_error("An error occurred in func3");
+            } catch (const std::exception &e) {
+                std::cout << "Exception caught: " << e.what() << std::endl;
+                // 捕获堆栈信息并输出
+                std::cout << std::stacktrace(); // 输出当前堆栈跟踪信息
+            }*/
+        },
+        1);
+    submit_task.wait();
+}
+
+/*
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <unordered_map>
+
+#include "type_format.h"
+
+struct foo{
+    int x;
+    double y;
+    std::unordered_set<int> s;
+    std::unordered_map<std::string, int> m;
+};
+
+template<typename _Type>
+struct bar{
+    std::tuple<foo, std::string, std::string> t;
+    std::vector<std::string_view> v;
+    _Type z;
+    _Type w;
+    char s[2] = "S";
+    char n[2] = "N";
+    char e[0];
+    char m[3] = "NN";
+    char l[0];
+};
+
+struct foobar{
+public:
+    template<std::convertible_to<bar<std::string>> _Cookie>
+    foobar(_Cookie &&_cookie): cookie(std::forward<_Cookie>(_cookie)){}
+
+private:
+    int password = 114514;
+    std::string secret = "embarrassing fact";
+    bar<std::string> cookie;
+};
+
+// steal private members.
+template<>
+struct fake::tool::steal<[]{}, fake::tool::adaptor<foobar>, &foobar::password, &foobar::secret, &foobar::cookie>{
+    // register meta-implementations for token-based-cpo 'fake::for_each<fake::cpo::format<...>>' at compile-time.
+    using token = fake::cpo::format<fake::io::token::pretty>;
+    static_assert(fake::custom::for_each::config::emplace_visitor<[]{}, token, steal>());
+};
+
+TEST_CASE("test fake printf")
+{
+    using namespace std::string_literals;
+
+    bar<std::string> var{
+		    {{114, 514.0, {1919, 893}, {{"ya", 8}, {"ju", 10}}}, "MGR", "YUH"},
+            {"SZ", "JOKER"},
+            "DIYUSI"s,
+            "NEL"s
+        };
+
+    foobar lost_owner{std::move(var)};
+
+    std::cout << fake::io::pretty<>(lost_owner) << std::endl;
+}
+*/
+
+
+void stacktrace_stringstream(std::stringstream& ss, const std::stacktrace& st) {
+    ss << "\nStack trace start:\n";
+    int i = 0;
+    for (const auto& frame : st) {
+        ss << std::format("{:4}: {} info \n {}:{}\n\n",
+                          i++,
+                         frame.description().c_str(), // Demangle for human-readable names
+                          frame.source_file(),
+                          frame.source_line());
+    }
+    ss << "Stack trace end...";
+}
+
+void stacktrace_vformat(std::string& output, const std::stacktrace& st) {
+    output = "\nStack trace start:\n";
+    int i = 0;
+    for (const auto& frame : st) {
+        // 使用 std::string_view 避免复制
+        std::string_view description =frame.description();
+        std::string_view file = frame.source_file();
+        std::string_view line = std::to_string(++i);
+        std::string_view source_line =std::to_string( frame.source_line());
+        output += std::vformat("{:4}: {} info \n {}:{}\n\n",
+                               std::make_format_args(line, description, file, source_line));
+    }
+    output += "Stack trace end...";
+}
+
+TEST_CASE("Stacktrace Performance") {
+    const int iterations = 20000; // Adjust the iteration count for more accurate results
+    std::stacktrace st = std::stacktrace::current();
+
+    SUBCASE("std::stringstream") {
+        auto start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < iterations; ++i) {
+            std::stringstream ss;
+            stacktrace_stringstream(ss, st);
+            volatile std::string str = ss.str(); // Prevent compiler optimization
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+         std::cout<<"std::stringstream: " << duration.count() << "ms";
+    }
+
+    SUBCASE("std::vformat") {
+        auto start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < iterations; ++i) {
+            std::string output;
+            stacktrace_vformat(output, st);
+            volatile std::string str = output; // Prevent compiler optimization
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        std::cout<< "std::vformat: " << duration.count() << "ms";
+    }
 }

@@ -10,7 +10,21 @@
 
 import stl;
 
+void test()
+{
+    try {
 
+        throw std::runtime_error("Something went wrong");
+    } catch (...) {
+        // 使用Boost Stacktrace捕获当前栈信息
+        std::stringstream ss;
+        ss << boost::stacktrace::stacktrace();
+
+        // 将栈信息输出到控制台
+        std::cout << "Caught exception, stack trace:"<< ss.str() << std::endl;
+
+    }
+}
 int main(int argc, char **argv) {
     Log::instance(argv[0]);
 
@@ -39,17 +53,21 @@ int main(int argc, char **argv) {
         // 使用分配的内存
     }*/
 
+
     doctest::Context context;
     context.applyCommandLine(argc, argv);
-
+    //LOG_INFO_R << boost::stacktrace::stacktrace();
     int res = context.run(); // run doctest
-
     // important - query flags (and --exit) rely on the user doing this
     if (context.shouldExit()) {
         // propagate the result of the tests
         return res;
     }
 
+    test();
+
+
 
     return 0;
 }
+

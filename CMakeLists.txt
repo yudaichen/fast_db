@@ -8,7 +8,7 @@ project(${APP_NAME})
 #c++23 标准
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)  # 禁用编译器特定扩展
+#set(CMAKE_CXX_EXTENSIONS OFF)  # 禁用编译器特定扩展
 
 #用于指定 CMake 是否将扫描目标中C++源以查找模块依赖项
 #https://cmake.org/cmake/help/latest/prop_tgt/CXX_SCAN_FOR_MODULES.html#prop_tgt:CXX_SCAN_FOR_MODULES
@@ -16,12 +16,12 @@ set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
 # 根据构建类型设置优化标志
 message(STATUS "Build type = ${CMAKE_BUILD_TYPE}")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG")
+#[[set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -DNDEBUG")
 set(CMAKE_C_FLAGS_RELEASE "-Ofast -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -DNDEBUG")
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -ggdb -DNDEBUG")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g -ggdb -DNDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb -DNDEBUG")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g -ggdb -DNDEBUG")]]
 
 
 # 使用test文件
@@ -43,14 +43,23 @@ function(fn_modules)
         string(REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
         message(STATUS "Using Clang with Clang-${CLANG_VERSION_STRING} as the build.")
         if (CLANG_VERSION_STRING VERSION_GREATER_EQUAL 17)
-            set(CMAKE_CXX_FLAGS -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wextra -Wno-unused-parameter -Wno-unused-private-field -pthread -fcolor-diagnostics)
+            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wextra -Wno-unused-parameter -Wno-unused-private-field -pthread -fcolor-diagnostics")
             # 使用 Clang 时，设置使用 lld 链接器
             set(CMAKE_CXX_LINKER "lld-19")
             set(CMAKE_C_LINKER "lld-19")
+            set(CMAKE_LINKER "lld-19")
         else()
             message(FATAL_ERROR "Please use clang version 17.0 and above")
         endif()
-        set(CMAKE_EXE_LINKER_FLAGS PRIVATE -static-libstdc++ -static-libgcc -z noexecstack)
+
+        # 设置 Clang 使用 libc++ 库
+#[[        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lc++abi")]]
+
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -z noexecstack")
+        #set(CMAKE_EXE_LINKER_FLAGS PRIVATE "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc -z noexecstack")
 
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # 使用 GNU 时，设置使用 Gold 链接器
@@ -97,14 +106,15 @@ endfunction()
 function(fn_find_package)
     # 寻找第三方包
     find_package(Threads REQUIRED)
-    find_package(Boost REQUIRED)
+    find_package(Boost 1.83.0 REQUIRED COMPONENTS ALL)
     find_package(nlohmann_json REQUIRED)
     find_package(yaml-cpp CONFIG REQUIRED)
-    find_package(glog REQUIRED)
+   # find_package(glog REQUIRED)
+
 endfunction()
 
 function(fn_build)
-    #ubuntu 库文件目录
+    #ubuntu 库文件目录usr
     include_directories(/usr/include)
 
     #项目内头文件
@@ -113,7 +123,7 @@ function(fn_build)
     # 本项目 内置头文件目录
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest)
-
+    #include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/fake/include)
 
     # 头文件
     file(GLOB_RECURSE CURRENT_HEADERS
@@ -128,7 +138,12 @@ function(fn_build)
 
             # doctest
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.hpp)
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.hpp
+
+            # fake
+            #${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/fake/include/*.h
+           # ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/fake/include/*.hpp
+    )
 
     # 源文件
     file(GLOB_RECURSE SOURCE_FILES
@@ -147,6 +162,7 @@ function(fn_build)
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.c
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.cc
+
     )
 
     # 使用test文件
@@ -212,18 +228,31 @@ function(fn_build)
 
     endif ()
 
+
+    message("Boost_ALL_TARGES: ${Boost_ALL_TARGES}")
+    message("Boost_LIBRARIES: ${Boost_LIBRARIES}")
     # 添加库文件搜索路径
     link_directories(/usr/lib/x86_64-linux-gnu)
     target_link_directories(${APP_NAME} PRIVATE /usr/local/lib)
+
+    #libstdc++exp.a 包含了所有实验性功能：
+    #以前，一些实验性功能分散在 libstdc++fs.a（文件系统 TS）和 libstdc++_libbacktrace.a（用于 std::stacktrace）等库中。
+    #现在，所有这些实验性功能都合并到了 libstdc++exp.a 中
     target_link_libraries(
             ${APP_NAME}
             pthread
-            ${Boost_LIBRARIES}
+            ${Boost_ALL_TARGES}
             glog
             #[[gtest]]
             gflags
             nlohmann_json
-            libyaml-cpp.so
+            yaml-cpp::yaml-cpp
+          #[[  stdc++fs
+            stdc++
+            gcc_s
+            backtrace]]
+            stdc++
+            stdc++exp
     )
 endfunction()
 
