@@ -224,7 +224,7 @@ export namespace fast::util {
     // 信号量
     class semaphore {
     public:
-        explicit semaphore(size_t initial = 0) {
+        explicit semaphore(std::size_t initial = 0) {
 #if defined(HAVE_SEM)
             sem_init(&_sem, 0, initial);
 #else
@@ -239,7 +239,7 @@ export namespace fast::util {
         }
 
         // 取消阻止
-        void post(size_t n = 1) {
+        void post(std::size_t n = 1) {
 #if defined(HAVE_SEM)
             while (n--) {
                 sem_post(&_sem);
@@ -272,7 +272,7 @@ export namespace fast::util {
 #if defined(HAVE_SEM)
         sem_t _sem;
 #else
-        size_t _count;
+        std::size_t _count;
         std::recursive_mutex _mutex;
         std::condition_variable_any _condition;
 #endif

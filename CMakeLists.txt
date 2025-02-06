@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.28.3)
-set(CMAKE_C_COMPILER "/usr/bin/clang-19")
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++-19")
-set(CMAKE_CXX_COMPILER_ID "Clang")
+if (UNIX)
+    set(CMAKE_C_COMPILER "/usr/bin/clang-20")
+    set(CMAKE_CXX_COMPILER "/usr/bin/clang++-20")
+    set(CMAKE_CXX_COMPILER_ID "Clang")
+endif ()
 set(APP_NAME fast_experience)
 project(${APP_NAME})
 
@@ -13,6 +15,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #用于指定 CMake 是否将扫描目标中C++源以查找模块依赖项
 #https://cmake.org/cmake/help/latest/prop_tgt/CXX_SCAN_FOR_MODULES.html#prop_tgt:CXX_SCAN_FOR_MODULES
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+
+# 生成 compile_commands.json 文件
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 
 # 根据构建类型设置优化标志
 message(STATUS "Build type = ${CMAKE_BUILD_TYPE}")
@@ -43,20 +49,20 @@ function(fn_modules)
         string(REGEX REPLACE ".*clang version ([0-9]+\\.[0-9]+).*" "\\1" CLANG_VERSION_STRING ${clang_full_version_string})
         message(STATUS "Using Clang with Clang-${CLANG_VERSION_STRING} as the build.")
         if (CLANG_VERSION_STRING VERSION_GREATER_EQUAL 17)
-            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wextra -Wno-unused-parameter -Wno-unused-private-field -pthread -fcolor-diagnostics")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-sign-compare -Wunused-result -Wno-deprecated-declarations -Wextra -Wno-unused-parameter -Wno-unused-private-field -Wno-macro-redefined -Wno-macro-redefined-pthread -fcolor-diagnostics")
             # 使用 Clang 时，设置使用 lld 链接器
-            set(CMAKE_CXX_LINKER "lld-19")
-            set(CMAKE_C_LINKER "lld-19")
-            set(CMAKE_LINKER "lld-19")
-        else()
+            set(CMAKE_CXX_LINKER "lld-20")
+            set(CMAKE_C_LINKER "lld-20")
+            set(CMAKE_LINKER "lld-20")
+        else ()
             message(FATAL_ERROR "Please use clang version 17.0 and above")
-        endif()
+        endif ()
 
         # 设置 Clang 使用 libc++ 库
-#[[        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lc++abi")]]
+        #[[        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lc++abi")]]
 
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -z noexecstack")
         #set(CMAKE_EXE_LINKER_FLAGS PRIVATE "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc -z noexecstack")
@@ -67,7 +73,16 @@ function(fn_modules)
         set(CMAKE_C_LINKER "ld.gold")
         message(STATUS "Using GNU with gold as the linker.")
     else ()
-        message(WARNING "Unsupported compiler. Default linker will be used.")
+        # 检查是否使用 MSVC 编译器
+        if (MSVC)
+            # 添加 /bigobj 编译选项
+            add_compile_options(/bigobj)
+            add_compile_definitions(_WIN32_WINNT=0x0601)
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /FORCE:MULTIPLE")
+        else ()
+            message(WARNING "Unsupported compiler. Default linker will be used.")
+        endif()
+
     endif ()
 endfunction()
 
@@ -104,45 +119,104 @@ function(fn_optimize)
 endfunction()
 
 function(fn_find_package)
-    # 寻找第三方包
     find_package(Threads REQUIRED)
-    find_package(Boost 1.83.0 REQUIRED COMPONENTS ALL)
+    # 寻找第三方包
+
+    # doctest与glog冲突
+    add_definitions(-DDOCTEST_CONFIG_NO_SHORT_MACRO_NAMES)
+
+    if (UNIX)
+        list(APPEND CMAKE_PREFIX_PATH "/mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0")
+        add_definitions(-DBOOST_ASIO_HAS_FILE)
+        add_definitions(-DBOOST_ASIO_HAS_IO_URING)
+        add_definitions(-DBOOST_ASIO_DISABLE_EPOLL)
+        add_definitions(-DBOOST_ASIO_HAS_CO_AWAIT)
+
+
+        add_definitions(-DASIO_HAS_FILE)
+        add_definitions(-DASIO_HAS_IO_URING)
+        add_definitions(-DASIO_DISABLE_EPOLL)
+    else ()
+        list(APPEND CMAKE_PREFIX_PATH "F:/runtime/dep_lib/win/boost_1_87_0")
+    endif ()
+    #find_package(Boost 1.87.0 REQUIRED COMPONENTS ALL)
+    find_package(Boost 1.87.0 REQUIRED)
+    # 判断是否找到 Boost
+    if (Boost_FOUND)
+        message(STATUS "Boost found (version ${Boost_VERSION})")
+
+        # 输出头文件路径
+        message(STATUS "Boost include directories: ${Boost_INCLUDE_DIRS}")
+
+        # 输出库文件路径 (所有找到的库)
+        message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
+
+        if (Boost_SYSTEM_FOUND)
+            message(STATUS "Boost.System found.")
+        endif ()
+        if (Boost_FILESYSTEM_FOUND)
+            message(STATUS "Boost.Filesystem found.")
+        endif ()
+        if (Boost_CHARCONV_FOUND)
+            message(STATUS "Boost.Thread found.")
+        endif ()
+        if (Boost_THREAD_FOUND)
+            message(STATUS "Boost.Thread found.")
+        endif ()
+        if (Boost_CONTEXT_FOUND)
+            message(STATUS "Boost.Thread found.")
+        endif ()
+
+        # 将 Boost 头文件包含到项目中
+        include_directories(${Boost_INCLUDE_DIRS})
+
+        # 添加可执行文件并链接 Boost 库 (链接所有找到的库)
+        #target_link_libraries(my_program ${Boost_LIBRARIES})
+
+    else ()
+        message(FATAL_ERROR "Boost not found. Please set BOOST_ROOT or ensure Boost is installed correctly.")
+    endif ()
     find_package(nlohmann_json REQUIRED)
     find_package(yaml-cpp CONFIG REQUIRED)
-   # find_package(glog REQUIRED)
+    find_package(glog REQUIRED)
+    find_package(SQLite3 REQUIRED)
+    find_package(OpenSSL REQUIRED)
+    #[[find_package(reflectcpp REQUIRED)]]
+    #[[ find_package(fmt)]]
 
+    if (UNIX)
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(IO_URING REQUIRED liburing)
+    endif ()
 endfunction()
 
 function(fn_build)
-    #ubuntu 库文件目录usr
-    include_directories(/usr/include)
+    if (UNIX)
+        #ubuntu 库文件目录usr
+        include_directories(/usr/include)
+        include_directories(/usr/local/include)
 
+    else ()
+
+
+    endif ()
     #项目内头文件
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
     # 本项目 内置头文件目录
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest)
-    #include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/fake/include)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
+
 
     # 头文件
     file(GLOB_RECURSE CURRENT_HEADERS
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
 
-            # cppcoro
-            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include/*.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include/*.hpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/lib/*.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/lib/*.hpp
-
             # doctest
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.h
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.hpp
-
-            # fake
-            #${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/fake/include/*.h
-           # ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/fake/include/*.hpp
     )
 
     # 源文件
@@ -153,40 +227,41 @@ function(fn_build)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.ui
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.qrc
 
-            # cppcoro
-            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include/*.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/include/*.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cppcoro/lib/*.cc
-
             # doctest
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.c
             ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/doctest/doctest/*.cc
-
     )
 
     # 使用test文件
     if (USE_TEST)
         #测试文件
-        set(TEST_FILE
-               #[[
-                ${CMAKE_CURRENT_SOURCE_DIR}/test/std_coroutine.cpp
-                ${CMAKE_CURRENT_SOURCE_DIR}/test/raft_test.cpp]]
-                ${CMAKE_CURRENT_SOURCE_DIR}/run/test_main.cpp
-                ${CMAKE_CURRENT_SOURCE_DIR}/test/test_utils.cpp
+        #[[  set(TEST_FILE
+                  ${CMAKE_CURRENT_SOURCE_DIR}/run/test_main.cpp
 
-        )
+                  ${CMAKE_CURRENT_SOURCE_DIR}/test/std_coroutine.cpp
+                  ${CMAKE_CURRENT_SOURCE_DIR}/test/test_utils.cpp
+                  ${CMAKE_CURRENT_SOURCE_DIR}/test/test_blog_create.cpp
+                  ${CMAKE_CURRENT_SOURCE_DIR}/test/test_reflect.cpp
+                  ${CMAKE_CURRENT_SOURCE_DIR}/test/test_cppcoro.cpp
+                  ${CMAKE_CURRENT_SOURCE_DIR}/test/test_beast.cpp
+                  ${CMAKE_CURRENT_SOURCE_DIR}/test/test_boost_mysql.cpp
+
+          )]]
+
+        file(GLOB TEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp)
 
         file(GLOB_RECURSE TEST_RAFT
                 ${CMAKE_CURRENT_SOURCE_DIR}/test/raft/*.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/test/raft/*.cc
-
+                ${CMAKE_CURRENT_SOURCE_DIR}/test/raft_test.cpp
         )
 
-       #[[
-        # gtest
-        add_test(test_all ${APP_NAME})
-        ]]
+        message("test file ${TEST_FILE}")
+        #[[
+         # gtest
+         add_test(test_all ${APP_NAME})
+         ]]
 
 
     else ()
@@ -199,17 +274,19 @@ function(fn_build)
             ${SOURCE_FILES}
             ${RUN_FILE}
             ${TEST_FILE}
-            ${TEST_RAFT}
+            ${CMAKE_CURRENT_SOURCE_DIR}/run/test_main.cpp
     )
 
     # 预编译头文件
     if (UES_PRECOMPILE)
         target_precompile_headers(
                 ${APP_NAME} PRIVATE
-                <boost/asio.hpp>
-                <nlohmann/json.hpp>
-                <yaml-cpp/yaml.h>
-                <glog/logging.h>
+                #[[ <boost/asio.hpp>
+                    <nlohmann/json.hpp>
+                    <yaml-cpp/yaml.h>
+                    <glog/logging.h>
+                    <doctest.h>]]
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/db/boost_head.h
         )
     endif ()
 
@@ -228,32 +305,73 @@ function(fn_build)
 
     endif ()
 
+    if (UNIX)
+        # 添加库文件搜索路径
+        link_directories(/usr/lib/x86_64-linux-gnu)
+        target_link_directories(${APP_NAME} PRIVATE /usr/local/lib)
 
-    message("Boost_ALL_TARGES: ${Boost_ALL_TARGES}")
-    message("Boost_LIBRARIES: ${Boost_LIBRARIES}")
-    # 添加库文件搜索路径
-    link_directories(/usr/lib/x86_64-linux-gnu)
-    target_link_directories(${APP_NAME} PRIVATE /usr/local/lib)
+        #libstdc++exp.a 包含了所有实验性功能：
+        #以前，一些实验性功能分散在 libstdc++fs.a（文件系统 TS）和 libstdc++_libbacktrace.a（用于 std::stacktrace）等库中。
+        #现在，所有这些实验性功能都合并到了 libstdc++exp.a 中
+        target_link_libraries(
+                ${APP_NAME}
+                pthread
+                Threads::Threads
 
-    #libstdc++exp.a 包含了所有实验性功能：
-    #以前，一些实验性功能分散在 libstdc++fs.a（文件系统 TS）和 libstdc++_libbacktrace.a（用于 std::stacktrace）等库中。
-    #现在，所有这些实验性功能都合并到了 libstdc++exp.a 中
-    target_link_libraries(
-            ${APP_NAME}
-            pthread
-            ${Boost_ALL_TARGES}
-            glog
-            #[[gtest]]
-            gflags
-            nlohmann_json
-            yaml-cpp::yaml-cpp
-          #[[  stdc++fs
-            stdc++
-            gcc_s
-            backtrace]]
-            stdc++
-            stdc++exp
-    )
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_context.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_charconv.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_thread.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_fiber.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_system.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_date_time.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_timer.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_coroutine.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_cobalt.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_json.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_container.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_filesystem.a
+                /mnt/f/runtime/dep_lib/ubuntu24/boost/boost_1_87_0/stage/lib/libboost_url.a
+
+                nlohmann_json::nlohmann_json
+                SQLite::SQLite3
+                yaml-cpp::yaml-cpp
+                glog::glog
+                OpenSSL::Crypto
+                OpenSSL::SSL
+                #[[ fmt::fmt]]
+                #[[ reflectcpp::reflectcpp]]
+
+                stdc++
+                stdc++exp
+                libquadmath.so #[=[boost charconv 强制使用，无法剔除]=]
+                ${IO_URING_LIBRARIES}
+        )
+    elseif (WIN32)
+        target_link_libraries(
+                ${APP_NAME}
+
+                nlohmann_json::nlohmann_json
+                SQLite::SQLite3
+                yaml-cpp::yaml-cpp
+                glog::glog
+                OpenSSL::Crypto
+                OpenSSL::SSL
+
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_context-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_charconv-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_thread-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_fiber-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_system-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_date_time-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_timer-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_coroutine-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_cobalt-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_json-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_container-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_filesystem-vc143-mt-gd-x64-1_87.lib
+                F:/runtime/dep_lib/win/boost_1_87_0/stage/lib/boost_url-vc143-mt-gd-x64-1_87.lib
+        )
+    endif ()
 endfunction()
 
 function(help_conan_1)
@@ -269,16 +387,40 @@ endfunction()
 function(help_conan_2)
 
     note("\n\n\n\n*****************************use conan2.******************************\n")
-    note("debug:   cd cmake/debug  conan install ../.. -of . --build missing")
-    note("release: cd cmake/debug  conan install ../.. -of . --build missing\n")
-    note("-of   conan_toolchain.cmake 文件输出目录")
+    note("debug:   cd cmake/debug  conan install ../.. -of . --build missing -s build_type=Debug")
+    note("release: cd cmake/debug  conan install ../.. -of . --build missing -s build_type=Release\n")
+    note("-of   conan_toolchain.cmake 文件输出目录
+
+    clang版本的编译：
+    ./bootstrap.sh --with-toolset=clang
+
+    ./b2 toolset=clang cxxflags="-stdlib=libc++" linkflags="-stdlib=libc++ -lc++abi" --build-type=complete stage threading=multi cxxstd=20 --layout=versioned
+
+    编辑 project-config.jam 文件
+    在 project-config.jam 文件中，指定使用 Clang：
+    using clang : : clang++-20 : <cxxflags>"-stdlib=libc++" <linkflags>"-stdlib=libc++ -lc++abi" ;
+
+    ./b2 toolset=clang cxxflags="-stdlib=libc++" linkflags="-stdlib=libc++ -lc++abi" --build-type=complete stage threading=multi cxxstd=20 --layout=versioned
+
+
+/bootstrap.sh --with-libraries=cobalt
+./b2 --with-libraries=cobalt link=shared threading=multi cxxstd=20")
     note("*****************************end conan*****************************\n\n\n\n")
 
 endfunction()
 
 
-
 fn_modules()
-fn_optimize()
 fn_find_package()
 fn_build()
+fn_optimize()
+
+message("\n\n** Build Summary **")
+message("  Prefix:           ${CMAKE_INSTALL_PREFIX}")
+message("  Build Type:       ${CMAKE_BUILD_TYPE}")
+message("  Architecture:     ${CMAKE_SYSTEM_PROCESSOR}")
+message("  System:           ${CMAKE_SYSTEM_NAME}")
+message("  Boost Include:    ${Boost_INCLUDE_DIRS}")
+message("  Boost Libraries:  ${Boost_LIBRARY_DIRS}")
+message("  Zlib Include:     ${ZLIB_INCLUDE_DIRS}")
+message("  Zlib Library:     ${ZLIB_LIBRARY_RELEASE}")

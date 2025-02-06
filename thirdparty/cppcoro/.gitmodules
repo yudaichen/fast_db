@@ -1,4 +1,0 @@
-[submodule "cake"]
-	path = tools/cake
-	url = https://github.com/lewissbaker/cake.git
-	branch = clang

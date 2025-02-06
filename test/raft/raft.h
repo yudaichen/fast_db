@@ -15,7 +15,7 @@ struct Log
     std::string content;           // 内容
 };
 
-enum class State
+enum State
 {
     None = 0,
     Leader = 1,    // 领导

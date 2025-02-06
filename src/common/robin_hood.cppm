@@ -891,7 +891,7 @@ template <typename T> struct WrapKeyEqual : public T {
 // According to STL, order of templates has effect on throughput. That's why
 // I've moved the boolean to the front.
 // https://www.reddit.com/r/cpp/comments/ahp6iu/compile_time_binary_size_reductions_and_cs_future/eeguck4/
-template <bool IsFlat, size_t MaxLoadFactor100, typename Key, typename T,
+template <bool IsFlat, std::size_t MaxLoadFactor100, typename Key, typename T,
           typename Hash, typename KeyEqual>
 class Table
     : public WrapHash<Hash>,

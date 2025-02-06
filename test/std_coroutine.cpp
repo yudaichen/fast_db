@@ -1,7 +1,6 @@
 ﻿
 
-import stl;
-#include <gtest/gtest.h>
+//import stl;
 #include "utils/log.h"
 /*#include <coroutine>
 #include <exception>
@@ -10,8 +9,12 @@ import stl;
 #include <stdexcept>
 #include <thread>
 #include <queue>*/
+#include "doctest.h"
 #include <coroutine>
+#include <future>
+#include <list>
 #include <stdexcept>
+#include <queue>
 /**
  * coro_ret<int> coroutine_7in7out() 就是协程函数。
  * coro_ret<int> c_r 就是协程的返回值。
@@ -133,7 +136,7 @@ coro_ret<int> coroutine_7in7out() {
     co_return 808;
 }
 
-TEST(std_cororutine, std_coroutine_test) {
+DOCTEST_TEST_CASE("std_cororutine, std_coroutine_test") {
 
     bool done = false;
     std::cout << "Start coroutine_7in7out ()\n";
@@ -284,7 +287,7 @@ Generator fibonacci() {
     }
 }
 
-TEST(std_cororutine, get_gener_test) {
+DOCTEST_TEST_CASE("std_cororutine, get_gener_test") {
     auto gen = fibonacci();
     for (int i = 0; i < 15; ++i) {
         if (gen.has_next()) {
@@ -506,7 +509,7 @@ struct Generator_t {
     }
 };
 
-TEST(std_cororutine, get_gener_algorithm) {
+DOCTEST_TEST_CASE("std_cororutine, get_gener_algorithm") {
 
     Generator_t<int>::from(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
             .filter([](auto i) {
@@ -1652,7 +1655,7 @@ Task<int, LooperExecutor> Consumer2(Channel<int> &channel) {
     co_return 1;
 }
 
-TEST(std_cororutine, get_gener_promise) {
+DOCTEST_TEST_CASE("std_cororutine, get_gener_promise") {
     auto simpleTask = simple_task();
     simpleTask.then([](int i) {
         LOG_INFO_R << "simple task end: " << i;
@@ -1702,7 +1705,7 @@ int main() {
 */
 
 
-TEST(std_cororutine, get_channel) {
+DOCTEST_TEST_CASE("std_cororutine, get_channel") {
     auto channel = Channel<int>(2);
     auto producer = Producer(channel);
     auto consumer = Consumer(channel);
@@ -1713,3 +1716,4 @@ TEST(std_cororutine, get_channel) {
     consumer.get_result();
     consumer2.get_result();
 }
+

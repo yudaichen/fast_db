@@ -1,7 +1,10 @@
 ﻿module;
 
-import stl;
+//import stl;
 #include <atomic>
+#include <functional>
+#include <iostream>
+#include <mutex>
 
 export module collect_utils;
 
@@ -215,7 +218,7 @@ public:
   ~LockFreeMap() { clear(); }
 
   void insert(const K &key, const V &value) {
-    if (num_elements.load() >= GROW_THRESHOLD * table.size()) {
+      if (num_elements.load() >= GROW_THRESHOLD * table.size()) {
       resize();
     }
 
@@ -282,8 +285,8 @@ public:
       Node<K, V> *current = bucket.head.load();
       while (current != nullptr) {
         Node<K, V> *next = current->next;
-        delete current;
-        current = next;
+          delete current;
+          current = next;
       }
       bucket.head.store(nullptr);
       bucket.tail.store(nullptr);

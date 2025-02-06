@@ -1,7 +1,8 @@
 module;
 
-import stl;
-
+//import stl;
+#include <mutex>
+#include <queue>
 export module queue_utils;
 
 export namespace fast::util {
@@ -9,7 +10,7 @@ export namespace fast::util {
 // Thread safe implementation of a Queue using an std::queue
 template <typename T> class SafeQueue {
 private:
-  std::queue<T> m_queue;
+    std::queue<T> m_queue;
   std::mutex m_mutex;
 
 public:
