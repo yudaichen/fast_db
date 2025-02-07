@@ -424,3 +424,24 @@ message("  Boost Include:    ${Boost_INCLUDE_DIRS}")
 message("  Boost Libraries:  ${Boost_LIBRARY_DIRS}")
 message("  Zlib Include:     ${ZLIB_INCLUDE_DIRS}")
 message("  Zlib Library:     ${ZLIB_LIBRARY_RELEASE}")
+
+
+# 解决clion报错的问题
+if (UNIX)
+    set(LIBCXX_MODULE_DIRS "/usr/lib/llvm-20/share/libc++/v1")
+    add_library(unused_std_target STATIC)
+    target_sources(unused_std_target
+            PRIVATE
+            FILE_SET CXX_MODULES
+            BASE_DIRS ${LIBCXX_MODULE_DIRS}
+            FILES ${LIBCXX_MODULE_DIRS}/std.cppm ${LIBCXX_MODULE_DIRS}/std.compat.cppm)
+elseif (WIN32)
+    set(LIBCXX_MODULE_DIRS "F:/program/visul_studio/idea/VC/Tools/MSVC/14.42.34433/modules")
+    add_library(unused_std_target STATIC)
+    target_sources(unused_std_target
+            PRIVATE
+            FILE_SET CXX_MODULES
+            BASE_DIRS ${LIBCXX_MODULE_DIRS}
+            FILES ${LIBCXX_MODULE_DIRS}/std.ixx ${LIBCXX_MODULE_DIRS}/std.compat.ixx)
+
+endif ()
