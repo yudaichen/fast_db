@@ -5,7 +5,7 @@ if (UNIX)
     set(CMAKE_CXX_COMPILER_ID "Clang")
 endif ()
 set(APP_NAME fast_experience)
-project(${APP_NAME})
+project(fast_experience)
 
 #c++23 标准
 set(CMAKE_CXX_STANDARD 23)
