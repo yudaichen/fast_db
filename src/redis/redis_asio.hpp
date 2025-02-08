@@ -113,14 +113,34 @@ void redis_asio_connect() {
   }
 }
 
-/**
 
-@brief 登录
+// 生成 Redis 协议的数组格式
+std::string generate_command(const std::vector<std::string>& parts) {
+    std::ostringstream oss;
+    oss << "*" << parts.size() << "\r\n";  // 数组长度
+    for (const auto& part : parts) {
+        oss << "$" << part.size() << "\r\n";  // 字符串长度
+        oss << part << "\r\n";  // 字符串内容
+    }
+    return oss.str();
+}
 
-*2\r\n$4\r\nAUTH\r\n$your_password_length\r\nyour_password\r\n
-- `*2\r\n` 表示这个消息是一个数组，数组有两个元素。
-- `$4\r\nAUTH\r\n` 表示数组的第一个元素是一个长度为 4 的字符串，值为 "AUTH"。
-- `$your_password_length\r\nyour_password\r\n` 表示数组的第二个元素是长度为 `your_password_length` 的字符串，值为实际的密码字符串。
+// PING 命令
+std::string ping() {
+    return generate_command({"PING"});
+}
 
+// AUTH 命令
+std::string auth(const std::string& password) {
+    return generate_command({"AUTH", password});
+}
 
- */
+// SET 命令
+std::string set(const std::string& key, const std::string& value) {
+    return generate_command({"SET", key, value});
+}
+
+// GET 命令
+std::string get(const std::string& key) {
+    return generate_command({"GET", key});
+}
