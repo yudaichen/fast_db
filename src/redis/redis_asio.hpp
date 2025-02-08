@@ -114,7 +114,6 @@ void redis_asio_connect() {
   }
 }
 
-
 // 定义 SET 命令的可选参数结构体
 struct SetOptions {
     bool nx = false;
@@ -148,268 +147,311 @@ std::string generate_command(const std::string& command, const std::vector<std::
     return oss.str();
 }
 
-// PING 命令
-std::string ping() {
-    return generate_command("PING", {});
-}
-
-// AUTH 命令
-std::string auth(const std::string& password) {
-    return generate_command("AUTH", {password});
-}
-
-// SET 命令
-std::string set(const std::string& key, const std::string& value, const SetOptions& options = {}) {
-    return generate_command("SET", {key, value}, options);
-}
-
-// GET 命令
-std::string get(const std::string& key) {
-    return generate_command("GET", {key});
-}
-
-// HSET 命令（哈希表）
-std::string hset(const std::string& key, const std::map<std::string, std::string> & field_value_map) {
-    std::vector<std::string> parts = {key};
-    for (const auto& [field, value] : field_value_map) {
-        parts.push_back(field);
-        parts.push_back(value);
+namespace RedisConnection {
+    // PING 命令
+    std::string ping() {
+        return generate_command("PING", {});
     }
-    return generate_command("HSET", parts);
-}
 
-// HGET 命令（哈希表）
-std::string hget(const std::string& key, const std::string& field) {
-    return generate_command("HGET", {key, field});
-}
-
-// LPUSH 命令（列表）
-std::string lpush(const std::string& key, const std::vector<std::string>& values) {
-    std::vector<std::string> parts = {key};
-    parts.insert(parts.end(), values.begin(), values.end());
-    return generate_command("LPUSH", parts);
-}
-
-// LRANGE 命令（列表）
-std::string lrange(const std::string& key, int start, int stop) {
-    return generate_command("LRANGE", {key, std::to_string(start), std::to_string(stop)});
-}
-
-// SADD 命令（集合）
-std::string sadd(const std::string& key, const std::vector<std::string>& members) {
-    std::vector<std::string> parts = {key};
-    parts.insert(parts.end(), members.begin(), members.end());
-    return generate_command("SADD", parts);
-}
-
-// SMEMBERS 命令（集合）
-std::string smembers(const std::string& key) {
-    return generate_command("SMEMBERS", {key});
-}
-
-// ZADD 命令（有序集合）
-std::string zadd(const std::string& key, const std::map<std::string, double>& score_member_map) {
-    std::vector<std::string> parts = {key};
-    for (const auto& [member, score] : score_member_map) {
-        parts.push_back(std::to_string(score));
-        parts.push_back(member);
+    // AUTH 命令
+    std::string auth(const std::string& password) {
+        return generate_command("AUTH", {password});
     }
-    return generate_command("ZADD", parts);
 }
 
-// ZRANGE 命令（有序集合）
-std::string zrange(const std::string& key, int start, int stop, bool with_scores = false) {
-    std::vector<std::string> parts = {key, std::to_string(start), std::to_string(stop)};
-    if (with_scores) {
-        parts.push_back("WITHSCORES");
+namespace RedisString {
+    // SET 命令
+    std::string set(const std::string& key, const std::string& value, const SetOptions& options = {}) {
+        return generate_command("SET", {key, value}, options);
     }
-    return generate_command("ZRANGE", parts);
-}
 
-// DEL 命令
-std::string del(const std::vector<std::string>& keys) {
-    return generate_command("DEL", keys);
-}
-
-// EXISTS 命令
-std::string exists(const std::vector<std::string>& keys) {
-    return generate_command("EXISTS", keys);
-}
-
-// INCR 命令
-std::string incr(const std::string& key) {
-    return generate_command("INCR", {key});
-}
-
-// DECR 命令
-std::string decr(const std::string& key) {
-    return generate_command("DECR", {key});
-}
-
-// INCRBY 命令
-std::string incrby(const std::string& key, int increment) {
-    return generate_command("INCRBY", {key, std::to_string(increment)});
-}
-
-// DECRBY 命令
-std::string decrby(const std::string& key, int decrement) {
-    return generate_command("DECRBY", {key, std::to_string(decrement)});
-}
-
-// HGETALL 命令（哈希表）
-std::string hgetall(const std::string& key) {
-    return generate_command("HGETALL", {key});
-}
-
-// LLEN 命令（列表）
-std::string llen(const std::string& key) {
-    return generate_command("LLEN", {key});
-}
-
-// SISMEMBER 命令（集合）
-std::string sismember(const std::string& key, const std::string& member) {
-    return generate_command("SISMEMBER", {key, member});
-}
-
-// ZCARD 命令（有序集合）
-std::string zcard(const std::string& key) {
-    return generate_command("ZCARD", {key});
-}
-
-// ZSCORE 命令（有序集合）
-std::string zscore(const std::string& key, const std::string& member) {
-    return generate_command("ZSCORE", {key, member});
-}
-
-// MSET 命令
-std::string mset(const std::map<std::string, std::string>& key_value_map) {
-    std::vector<std::string> parts;
-    for (const auto& [key, value] : key_value_map) {
-        parts.push_back(key);
-        parts.push_back(value);
+    // GET 命令
+    std::string get(const std::string& key) {
+        return generate_command("GET", {key});
     }
-    return generate_command("MSET", parts);
-}
 
-// MGET 命令
-std::string mget(const std::vector<std::string>& keys) {
-    return generate_command("MGET", keys);
-}
-
-// RPOP 命令（列表）
-std::string rpop(const std::string& key) {
-    return generate_command("RPOP", {key});
-}
-
-// LPOP 命令（列表）
-std::string lpop(const std::string& key) {
-    return generate_command("LPOP", {key});
-}
-
-// ZREM 命令（有序集合）
-std::string zrem(const std::string& key, const std::vector<std::string>& members) {
-    std::vector<std::string> parts = {key};
-    parts.insert(parts.end(), members.begin(), members.end());
-    return generate_command("ZREM", parts);
-}
-
-// SREM 命令（集合）
-std::string srem(const std::string& key, const std::vector<std::string>& members) {
-    std::vector<std::string> parts = {key};
-    parts.insert(parts.end(), members.begin(), members.end());
-    return generate_command("SREM", parts);
-}
-
-// RENAME 命令
-std::string rename(const std::string& old_key, const std::string& new_key) {
-    return generate_command("RENAME", {old_key, new_key});
-}
-
-// RENAMENX 命令
-std::string renamenx(const std::string& old_key, const std::string& new_key) {
-    return generate_command("RENAMENX", {old_key, new_key});
-}
-
-// APPEND 命令
-std::string append(const std::string& key, const std::string& value) {
-    return generate_command("APPEND", {key, value});
-}
-
-// STRLEN 命令
-std::string strlen(const std::string& key) {
-    return generate_command("STRLEN", {key});
-}
-
-// HDEL 命令（哈希表）
-std::string hdel(const std::string& key, const std::vector<std::string>& fields) {
-    std::vector<std::string> parts = {key};
-    parts.insert(parts.end(), fields.begin(), fields.end());
-    return generate_command("HDEL", parts);
-}
-
-// HLEN 命令（哈希表）
-std::string hlen(const std::string& key) {
-    return generate_command("HLEN", {key});
-}
-
-// HKEYS 命令（哈希表）
-std::string hkeys(const std::string& key) {
-    return generate_command("HKEYS", {key});
-}
-
-// HVALS 命令（哈希表）
-std::string hvals(const std::string& key) {
-    return generate_command("HVALS", {key});
-}
-
-// SDIFF 命令（集合）
-std::string sdiff(const std::vector<std::string>& keys) {
-    return generate_command("SDIFF", keys);
-}
-
-// SINTER 命令（集合）
-std::string sinter(const std::vector<std::string>& keys) {
-    return generate_command("SINTER", keys);
-}
-
-// SUNION 命令（集合）
-std::string sunion(const std::vector<std::string>& keys) {
-    return generate_command("SUNION", keys);
-}
-
-// ZRANGEBYSCORE 命令（有序集合）
-std::string zrangebyscore(const std::string& key, const std::string& min, const std::string& max, bool with_scores = false, int offset = -1, int count = -1) {
-    std::vector<std::string> parts = {key, min, max};
-    if (with_scores) {
-        parts.push_back("WITHSCORES");
+    // MSET 命令
+    std::string mset(const std::map<std::string, std::string>& key_value_map) {
+        std::vector<std::string> parts;
+        for (const auto& [key, value] : key_value_map) {
+            parts.push_back(key);
+            parts.push_back(value);
+        }
+        return generate_command("MSET", parts);
     }
-    if (offset != -1 && count != -1) {
-        parts.push_back("LIMIT");
-        parts.push_back(std::to_string(offset));
-        parts.push_back(std::to_string(count));
+
+    // MGET 命令
+    std::string mget(const std::vector<std::string>& keys) {
+        return generate_command("MGET", keys);
     }
-    return generate_command("ZRANGEBYSCORE", parts);
+
+    // INCR 命令
+    std::string incr(const std::string& key) {
+        return generate_command("INCR", {key});
+    }
+
+    // DECR 命令
+    std::string decr(const std::string& key) {
+        return generate_command("DECR", {key});
+    }
+
+    // INCRBY 命令
+    std::string incrby(const std::string& key, int increment) {
+        return generate_command("INCRBY", {key, std::to_string(increment)});
+    }
+
+    // DECRBY 命令
+    std::string decrby(const std::string& key, int decrement) {
+        return generate_command("DECRBY", {key, std::to_string(decrement)});
+    }
+
+    // APPEND 命令
+    std::string append(const std::string& key, const std::string& value) {
+        return generate_command("APPEND", {key, value});
+    }
+
+    // STRLEN 命令
+    std::string strlen(const std::string& key) {
+        return generate_command("STRLEN", {key});
+    }
 }
 
-// ZREVRANGE 命令（有序集合）
-std::string zrevrange(const std::string& key, int start, int stop, bool with_scores = false) {
-    std::vector<std::string> parts = {key, std::to_string(start), std::to_string(stop)};
-    if (with_scores) {
-        parts.push_back("WITHSCORES");
+namespace RedisHash {
+    // HSET 命令（哈希表）
+    std::string hset(const std::string& key, const std::map<std::string, std::string> & field_value_map) {
+        std::vector<std::string> parts = {key};
+        for (const auto& [field, value] : field_value_map) {
+            parts.push_back(field);
+            parts.push_back(value);
+        }
+        return generate_command("HSET", parts);
     }
-    return generate_command("ZREVRANGE", parts);
+
+    // HGET 命令（哈希表）
+    std::string hget(const std::string& key, const std::string& field) {
+        return generate_command("HGET", {key, field});
+    }
+
+    // HGETALL 命令（哈希表）
+    std::string hgetall(const std::string& key) {
+        return generate_command("HGETALL", {key});
+    }
+
+    // HDEL 命令（哈希表）
+    std::string hdel(const std::string& key, const std::vector<std::string>& fields) {
+        std::vector<std::string> parts = {key};
+        parts.insert(parts.end(), fields.begin(), fields.end());
+        return generate_command("HDEL", parts);
+    }
+
+    // HLEN 命令（哈希表）
+    std::string hlen(const std::string& key) {
+        return generate_command("HLEN", {key});
+    }
+
+    // HKEYS 命令（哈希表）
+    std::string hkeys(const std::string& key) {
+        return generate_command("HKEYS", {key});
+    }
+
+    // HVALS 命令（哈希表）
+    std::string hvals(const std::string& key) {
+        return generate_command("HVALS", {key});
+    }
+
+    // HMGET 命令
+    std::string hmget(const std::string& key, const std::vector<std::string>& fields) {
+        std::vector<std::string> parts = {key};
+        parts.insert(parts.end(), fields.begin(), fields.end());
+        return generate_command("HMGET", parts);
+    }
 }
 
-// ZREVRANGEBYSCORE 命令（有序集合）
-std::string zrevrangebyscore(const std::string& key, const std::string& max, const std::string& min, bool with_scores = false, int offset = -1, int count = -1) {
-    std::vector<std::string> parts = {key, max, min};
-    if (with_scores) {
-        parts.push_back("WITHSCORES");
+namespace RedisList {
+    // LPUSH 命令（列表）
+    std::string lpush(const std::string& key, const std::vector<std::string>& values) {
+        std::vector<std::string> parts = {key};
+        parts.insert(parts.end(), values.begin(), values.end());
+        return generate_command("LPUSH", parts);
     }
-    if (offset != -1 && count != -1) {
-        parts.push_back("LIMIT");
-        parts.push_back(std::to_string(offset));
-        parts.push_back(std::to_string(count));
+
+    // RPUSH 命令（列表）
+    std::string rpush(const std::string& key, const std::vector<std::string>& values) {
+        std::vector<std::string> parts = {key};
+        parts.insert(parts.end(), values.begin(), values.end());
+        return generate_command("RPUSH", parts);
     }
-    return generate_command("ZREVRANGEBYSCORE", parts);
+
+    // LRANGE 命令（列表）
+    std::string lrange(const std::string& key, int start, int stop) {
+        return generate_command("LRANGE", {key, std::to_string(start), std::to_string(stop)});
+    }
+
+    // LLEN 命令（列表）
+    std::string llen(const std::string& key) {
+        return generate_command("LLEN", {key});
+    }
+
+    // LPOP 命令（列表）
+    std::string lpop(const std::string& key) {
+        return generate_command("LPOP", {key});
+    }
+
+    // RPOP 命令（列表）
+    std::string rpop(const std::string& key) {
+        return generate_command("RPOP", {key});
+    }
+}
+
+namespace RedisSet {
+    // SADD 命令（集合）
+    std::string sadd(const std::string& key, const std::vector<std::string>& members) {
+        std::vector<std::string> parts = {key};
+        parts.insert(parts.end(), members.begin(), members.end());
+        return generate_command("SADD", parts);
+    }
+
+    // SMEMBERS 命令（集合）
+    std::string smembers(const std::string& key) {
+        return generate_command("SMEMBERS", {key});
+    }
+
+    // SISMEMBER 命令（集合）
+    std::string sismember(const std::string& key, const std::string& member) {
+        return generate_command("SISMEMBER", {key, member});
+    }
+
+    // SREM 命令（集合）
+    std::string srem(const std::string& key, const std::vector<std::string>& members) {
+        std::vector<std::string> parts = {key};
+        parts.insert(parts.end(), members.begin(), members.end());
+        return generate_command("SREM", parts);
+    }
+
+    // SDIFF 命令（集合）
+    std::string sdiff(const std::vector<std::string>& keys) {
+        return generate_command("SDIFF", keys);
+    }
+
+    // SINTER 命令（集合）
+    std::string sinter(const std::vector<std::string>& keys) {
+        return generate_command("SINTER", keys);
+    }
+
+    // SUNION 命令（集合）
+    std::string sunion(const std::vector<std::string>& keys) {
+        return generate_command("SUNION", keys);
+    }
+}
+
+namespace RedisSortedSet {
+    // ZADD 命令（有序集合）
+    std::string zadd(const std::string& key, const std::map<std::string, double>& score_member_map) {
+        std::vector<std::string> parts = {key};
+        for (const auto& [member, score] : score_member_map) {
+            parts.push_back(std::to_string(score));
+            parts.push_back(member);
+        }
+        return generate_command("ZADD", parts);
+    }
+
+    // ZRANGE 命令（有序集合）
+    std::string zrange(const std::string& key, int start, int stop, bool with_scores = false) {
+        std::vector<std::string> parts = {key, std::to_string(start), std::to_string(stop)};
+        if (with_scores) {
+            parts.push_back("WITHSCORES");
+        }
+        return generate_command("ZRANGE", parts);
+    }
+
+    // ZREVRANGE 命令（有序集合）
+    std::string zrevrange(const std::string& key, int start, int stop, bool with_scores = false) {
+        std::vector<std::string> parts = {key, std::to_string(start), std::to_string(stop)};
+        if (with_scores) {
+            parts.push_back("WITHSCORES");
+        }
+        return generate_command("ZREVRANGE", parts);
+    }
+
+    // ZCARD 命令（有序集合）
+    std::string zcard(const std::string& key) {
+        return generate_command("ZCARD", {key});
+    }
+
+    // ZSCORE 命令（有序集合）
+    std::string zscore(const std::string& key, const std::string& member) {
+        return generate_command("ZSCORE", {key, member});
+    }
+
+    // ZREM 命令（有序集合）
+    std::string zrem(const std::string& key, const std::vector<std::string>& members) {
+        std::vector<std::string> parts = {key};
+        parts.insert(parts.end(), members.begin(), members.end());
+        return generate_command("ZREM", parts);
+    }
+
+    // ZRANGEBYSCORE 命令（有序集合）
+    std::string zrangebyscore(const std::string& key, const std::string& min, const std::string& max, bool with_scores = false, int offset = -1, int count = -1) {
+        std::vector<std::string> parts = {key, min, max};
+        if (with_scores) {
+            parts.push_back("WITHSCORES");
+        }
+        if (offset != -1 && count != -1) {
+            parts.push_back("LIMIT");
+            parts.push_back(std::to_string(offset));
+            parts.push_back(std::to_string(count));
+        }
+        return generate_command("ZRANGEBYSCORE", parts);
+    }
+
+    // ZREVRANGEBYSCORE 命令（有序集合）
+    std::string zrevrangebyscore(const std::string& key, const std::string& max, const std::string& min, bool with_scores = false, int offset = -1, int count = -1) {
+        std::vector<std::string> parts = {key, max, min};
+        if (with_scores) {
+            parts.push_back("WITHSCORES");
+        }
+        if (offset != -1 && count != -1) {
+            parts.push_back("LIMIT");
+            parts.push_back(std::to_string(offset));
+            parts.push_back(std::to_string(count));
+        }
+        return generate_command("ZREVRANGEBYSCORE", parts);
+    }
+
+    // ZCOUNT 命令（有序集合）
+    std::string zcount(const std::string& key, const std::string& min, const std::string& max) {
+        return generate_command("ZCOUNT", {key, min, max});
+    }
+}
+
+namespace RedisKey {
+    // DEL 命令
+    std::string del(const std::vector<std::string>& keys) {
+        return generate_command("DEL", keys);
+    }
+
+    // EXISTS 命令
+    std::string exists(const std::vector<std::string>& keys) {
+        return generate_command("EXISTS", keys);
+    }
+
+    // RENAME 命令
+    std::string rename(const std::string& old_key, const std::string& new_key) {
+        return generate_command("RENAME", {old_key, new_key});
+    }
+
+    // RENAMENX 命令
+    std::string renamenx(const std::string& old_key, const std::string& new_key) {
+        return generate_command("RENAMENX", {old_key, new_key});
+    }
+
+    // EXPIRE 命令
+    std::string expire(const std::string& key, int seconds) {
+        return generate_command("EXPIRE", {key, std::to_string(seconds)});
+    }
+
+    // PERSIST 命令
+    std::string persist(const std::string& key) {
+        return generate_command("PERSIST", {key});
+    }
 }
