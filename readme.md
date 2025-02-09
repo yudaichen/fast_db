@@ -86,4 +86,13 @@ https://apt.llvm.org/
 |  |  | `rename` | 重命名键 |
 |  |  | `renamenx` | 仅当新键不存在时，重命名键 |
 |  |  | `expire` | 为键设置过期时间（秒） |
-|  |  | `persist` | 移除键的过期时间，使键永久存在 | 
+|  |  | `persist` | 移除键的过期时间，使键永久存在 |
+| 发布订阅 | `RedisPubSub` | `subscribe` | 订阅一个或多个频道 |
+|  |  | `unsubscribe` | 取消订阅一个或多个频道 |
+|  |  | `publish` | 向指定频道发布消息 |
+| 流操作 | `RedisStream` | `xadd` | 向流中添加消息 |
+|  |  | `xread` | 从流中读取消息 |
+|  |  | `xlen` | 获取流的长度 |
+| 经纬度操作（地理空间索引） | `RedisGeo` | `geoadd` | 添加地理位置 |
+|  |  | `geodist` | 计算两个地理位置之间的距离 |
+|  |  | `georadius` | 根据给定的经纬度和半径，查找指定范围内的地理位置 | 
